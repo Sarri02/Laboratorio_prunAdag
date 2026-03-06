@@ -1,2 +1,2 @@
 # Laboratorio_prunAdag
-Laboratorio Optimization Methods
+Laboratorio Optimization Methods.
