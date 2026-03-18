@@ -3,9 +3,8 @@
 Il pruning delle reti neurali è una tecnica utilizzata per ridurre le dimensioni e la complessità dei modelli di deep learning, rimuovendo i parametri che contribuiscono in misura minima alle prestazioni del modello. Durante l'addestramento o dopo che un modello è stato addestrato, vengono identificati ed eliminati pesi, neuroni o interi filtri con un impatto minimo sulle previsioni.
 Questa operazione può essere eseguita, ad esempio, eliminando i pesi con il valore assoluto più basso. Ciò si traduce in una rete più sparsa che richiede meno memoria e calcolo, mantenendo, si spera, una precisione simile. Il pruning è ampiamente utilizzato per rendere le reti neurali più efficienti per l'implementazione su dispositivi con risorse limitate.
 Recentemente è stata proposta una variante dell'algoritmo classico AdaGrad, denominata PrunAdag, che esegue passaggi di ottimizzazione tenendo conto dello scenario di pruning e cercando di produrre una rete robusta al pruning post-addestramento. A tal fine, gli aggiornamenti per discesa del gradiente vengono eseguiti solo rispetto a un sottoinsieme di variabili, mentre l'insieme completo delle variabili subisce un'operazione di decadimento dei pesi ad ogni passo.
-Il metodo è stato tuttavia studiato e testato solo in contesti full-batch e con
-problemi convessi. L'analisi della variante minibatch sulle reti neurali profonde
-sarebbe particolarmente rilevante per le applicazioni.
+Il metodo è stato tuttavia studiato e testato solo in contesti full-batch e con problemi convessi. 
+L'analisi della variante minibatch sulle reti neurali profonde sarebbe particolarmente rilevante per le applicazioni.
 
 ---
 
