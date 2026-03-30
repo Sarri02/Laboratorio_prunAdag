@@ -49,7 +49,6 @@ class PrunAdag(Optimizer):
 
 
     @staticmethod
-
     # Funzione per calcolo del lower bound a_{i,k}
     def _compute_lower_bound(variant, x_abs, relevant_norm, signed_irrelevant_norm, step_num, eps):
         if variant in {"v1", "v3"}:
@@ -59,9 +58,8 @@ class PrunAdag(Optimizer):
 
 
     @torch.no_grad()
-
     def step(self, closure=None):
-        # Se è stata fornita una closure, eseguila per calcolare il loss e i gradienti        
+        # Se è stata fornita una closure, la eseguiamo per calcolare il loss e i gradienti        
         loss = None
         if closure is not None:                                                     
             with torch.enable_grad():
@@ -152,7 +150,7 @@ class PrunAdag(Optimizer):
                 s_decr = torch.zeros_like(p, memory_format=torch.preserve_format)
                 if decreasable_mask.any():
                                                                                                                     #----------------------------------------------
-                    # STEP 5.2 - AGGIORNAMENTO DEI PARAMETRI DECREASABILI
+                    # STEP 5.2 - AGGIORNAMENTO DEI PARAMETRI DECREMENTABILI
                     s_l = -p[decreasable_mask] / (w_decr[decreasable_mask] + eps)                                   # Calcolo del passo di decremento
                     local_a = lower_bound[decreasable_mask]
                     mag = torch.minimum(local_a, s_l.abs())

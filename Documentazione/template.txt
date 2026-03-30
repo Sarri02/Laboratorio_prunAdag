@@ -1,0 +1,70 @@
+Project Work in Optimization Methods/Optimization Techniques for Machine Learning
+
+Lecturer: Matteo Lapucci
+
+matteo.lapucci@unifi.it
+
+March 6, 2026
+
+1
+
+Project Work general rules
+
+1. Students (both from INM and IAM programs) interested in carrying out the 3CFU project on Optimization can contact (anytime) me to discuss possible assignments. It is not required that the student(s) have already passed the exam of the main Optimization course, however basic knowledge of nonlinear optimization and some in depth study of a subset of the course topics will clearly be necessary for the project work.
+
+2. In general, the project work will consist of the implementation of some optimization algorithm and possibly the (re)production of some numerical results on given problem instances, or the conduction of a small experimentation.
+
+3. The project work is 3CFU worth, i.e., 75 hours of work per person on average.
+
+4. The topic and the goals of the project work are established by the professor, together with the student(s), at the time of project assignment.
+
+5. There is no deadline, however completion time will be one of the metrics of evaluation; students are encouraged to ask for a project work to be assigned when they are actually willing to work on it.
+
+6. Project works can be either carried out individually or in groups of two students; groups of three students can exceptionally be accepted only if there are substantial reasons to do so. Of course, the workload grows proportionally.
+
+7. There is no numerical grade associated with this module; evaluation is based on a quality assessment. The assessment is mainly based on 1) correctness of the work,
+
+2) independence in carrying out the job, 3) awareness of the topic and critical spirit towards the results and 4) time required to complete the assignment.
+
+8. To conclude the assignment, a short report shall be sent via email to the professor. The report should summarize all the work done, including mathematical formulations of problems and algorithms, relevant background theoretical results (if any), experiments description and results discussion. The report MUST be prepared with LaTex and sent in pdf format.
+
+9. After the approval of the report, there will be a final, brief oral discussion of the entire project work. Slides for presentation are not required, but feel free to prepare them if you find them useful for the discussion.
+
+2
+
+Assignment
+
+Student(s) Mazza Maurizio, Sarri Marco Master’s degree program Artificial Intelligence
+
+Project topic Stochastic PrunAdag for Pruning-Aware Training of Neural Networks Topic description Neural network pruning is a technique used to reduce the size and complexity of deep learning models by removing parameters that contribute little to the model’s performance. During training or after a model has been trained, weights, neurons, or entire filters with minimal impact on predictions are identified and eliminated. This operation can be carried out, for instance, by eliminating weights with the lowest absolute value. This results in a sparser network that requires less memory and computation while hopefully maintaining similar accuracy. Pruning is widely used to make neural networks more efficient for deployment on resourceconstrained devices.
+
+Recently, a variant of the classical AdaGrad algorithm - called PrunAdag - was proposed [1] that carries out optimization steps aware of the pruning scenario and trying to produce a network that is robust to post-training pruning. To this aim, gradient descent updates are only performed with respect to a subset of variables, whereas the full set of variables undergoes a weight decay operation at each step.
+
+The method was however only studied and tested in full-batch settings and with convex problems. The analysis of the minibatch variant on deep Neural Networks would be particularly relevant for applications.
+
+Project goals Students are asked to
+
+• Implement a PyTorch Optimizer implementing the PrunAdag algorithm to be used in a minibatch fashion.
+
+• Identify a small set of test problems to test the method. Just as example, some suggestions might be:
+
+– A fully connected network with a couple of hidden layers trained on the MNIST dataset
+
+– A simple convolutional network trained on the FashionMNIST dataset.
+
+• Compare the performance of the network trained via PruneAdag to that of the net obtained using Adam optimizer, as follows:
+
+– Check if PrunAdag is able to properly train the network, verifying that the loss is actually reduced and if the fit quality is comparable to the one of the Adam-trained network
+
+– Show the plot of loss decrease as epochs go by, on each problem and for both algorithms
+
+– Compare the test performance (in terms of test accuracy) of the two models
+
+– Verify the quality of the network (both in terms of training loss and test accuracy) after the pruning operation is applied to the two networks. Pruning should be done setting to zero the all weights except the largest in absolute value. The test should be repeated setting the percentage s of surviving weights (i.e., not zero) at 10%, 20% and 50%.
+
+References .
+
+[1] “prunAdag: an adaptive pruning-aware gradient method”, Computational Optimization and Applications (2025), M. Porcelli, G. Seraghiti, P. Toint.
+
+2
+
