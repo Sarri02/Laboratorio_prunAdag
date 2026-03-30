@@ -3,74 +3,168 @@ from torch.optim import Optimizer
 
 class PrunAdag(Optimizer):
 
-    def __init__(self, params, lr=1e-2, top_k_ratio=0.5, weight_decay=1e-3, eps=1e-10):
-        # Validazione degli iperparametri
-        if not 0.0 <= lr:
+    def __init__(
+        self,
+        params,             # Lista dei parametri da ottimizzare
+        lr=1e-2,            # Learning rate
+        top_k_ratio=0.1,    # Percentuale di parametri rilevanti da selezionare (R_k)
+        zeta=1e-2,          # Valore iniziale per w_i^O e w_i^D
+        eps=1e-10,          # Piccolo valore per evitare divisioni per zero
+        variant="v1",       # Variante dell'algoritmo: "v1", "v2", "v3", "v4"
+    ):
+        # VALIDAZIONE DEI PARAMETRI
+        if lr < 0.0:
             raise ValueError(f"Learning rate non valido: {lr}")
         if not 0.0 <= top_k_ratio <= 1.0:
             raise ValueError(f"top_k_ratio non valido: {top_k_ratio}")
-        if not 0.0 <= weight_decay:
-            raise ValueError(f"weight_decay non valido: {weight_decay}")
-            
-        # Impostazione dei valori di default per ogni gruppo di parametri
-        defaults = dict(lr=lr, top_k_ratio=top_k_ratio, 
-                        weight_decay=weight_decay, eps=eps)
-        super(PrunAdag, self).__init__(params, defaults)
+        if zeta <= 0.0:
+            raise ValueError(f"zeta deve essere > 0, trovato: {zeta}")
+        if eps <= 0.0:
+            raise ValueError(f"eps deve essere > 0, trovato: {eps}")
+        if variant not in {"v1", "v2", "v3", "v4"}:
+            raise ValueError(f"variant non valido: {variant}. Usa uno tra v1, v2, v3, v4")
+
+        # STEP 0 - INIZIALIZZAZIONE DELL'OPTIMIZER
+        defaults = dict(
+            lr=lr,
+            top_k_ratio=top_k_ratio,
+            zeta=zeta,
+            eps=eps,
+            variant=variant,
+        )
+        super().__init__(params, defaults)
+
+
+    @staticmethod
+    def _topk_mask(abs_grad, k):
+
+        # STEP 1 - SELEZIONE DEI PARAMETRI RILEVANTI R_k
+        flat = abs_grad.flatten()                                                       # Appiattisce il gradiente assoluto per facilitare l'indicizzazione                          
+        if k >= flat.numel():                                                           # Se k è maggiore o uguale al numero totale di parametri, tutti sono rilevanti
+            return torch.ones_like(abs_grad, dtype=torch.bool)
+        topk_idx = torch.topk(flat, k=k, largest=True, sorted=False).indices            # Altrimenti, ottiene gli indici dei top-k parametri più rilevanti
+        mask = torch.zeros_like(flat, dtype=torch.bool)                             
+        mask[topk_idx] = True                                                                          
+        return mask.view_as(abs_grad)
+
+
+    @staticmethod
+
+    # Funzione per calcolo del lower bound a_{i,k}
+    def _compute_lower_bound(variant, x_abs, relevant_norm, signed_irrelevant_norm, step_num, eps):
+        if variant in {"v1", "v3"}:
+            scale = relevant_norm / (signed_irrelevant_norm + eps)
+            return (x_abs * scale) / step_num
+        return x_abs / step_num
+
 
     @torch.no_grad()
+
     def step(self, closure=None):
+        # Se è stata fornita una closure, eseguila per calcolare il loss e i gradienti        
         loss = None
-        # Se è fornita una closure, la usiamo per calcolare la loss
-        if closure is not None:
+        if closure is not None:                                                     
             with torch.enable_grad():
                 loss = closure()
-                
-        # Iterazione per ogni gruppo di parametri
+
+        # CICLO ESTERNO - GRUPPI DI PARAMETRI
         for group in self.param_groups:
-            lr = group['lr']                                  # Velocità di apprendimento
-            top_k_ratio = group['top_k_ratio']                # Percentuale di parametri considerati rilevanti
-            weight_decay = group['weight_decay']              # Fattore di penalizzazione
-            eps = group['eps']                                # Piccolo valore per stabilizzare la divisione 
+            lr = group["lr"]
+            top_k_ratio = group["top_k_ratio"]
+            zeta = group["zeta"]
+            eps = group["eps"]
+            variant = group["variant"]
 
-            # Iterazione per ogni parametro nel gruppo
-            for p in group['params']:
-                # Se il gradiente è None, saltiamo questo parametro
-                if p.grad is None:
+            # CICLO INTERNO - PARAMETRI DEL GRUPPO
+            for p in group["params"]:
+                if p.grad is None:                                      
                     continue
-                
-                grad = p.grad                                 # Gradiente del parametro                                    
-                state = self.state[p]                         # Stato associato al parametro
 
-                # Inizializzazione dello stato Adagrad
+                grad = p.grad
+                if grad.is_sparse:
+                    raise RuntimeError("PrunAdag non supporta gradienti sparsi")
+
+                state = self.state[p]
+
+                # STEP 0 - INIZIALIZZAZIONE DELLO STATO PER PARAMETRO
                 if len(state) == 0:
-                    state['step'] = 0                                                       # Contatore dei passi
-                    state['sum'] = torch.zeros_like(p, memory_format=torch.preserve_format) # Somma dei quadrati dei gradienti
+                    state["step"] = 0
+                    state["w_optim"] = torch.full_like(p, zeta, memory_format=torch.preserve_format)
+                    state["w_decr"] = torch.full_like(p, zeta, memory_format=torch.preserve_format)
 
-                state['step'] += 1                                                          # Incremento contatore dei passi    
-                
-                # 1. CLASSIFICAZIONE: Soglia per isolare i parametri Rilevanti (in base al gradiente)
-                k = max(1, int(p.numel() * top_k_ratio))            # Numero di parametri considerati rilevanti
-                abs_grad = torch.abs(grad)                          # Valori assoluti dei gradienti
-                
-                # Se il numero di parametri è maggiore di k, troviamo la soglia per isolare i Top-K
-                if k < p.numel():
-                    threshold = torch.kthvalue(abs_grad.flatten(), p.numel() - k + 1).values # Soglia
-                    relevant_mask = abs_grad >= threshold                                    # Maschera parametri rilevanti    
+                state["step"] += 1
+                step_num = state["step"]
+
+                # STEP 1 - SELEZIONE DEI RILEVANTI R_k
+                k = max(1, int(p.numel() * top_k_ratio))
+                abs_grad = grad.abs()
+                relevant_mask = self._topk_mask(abs_grad, k)
+                irrelevant_mask = ~relevant_mask
+
+                # STEP 3.1 - CANDIDATI ACCETTABILI A_k
+                sign_match_mask = (torch.sign(grad) == torch.sign(p)) & (p != 0)
+                signed_irrelevant_mask = irrelevant_mask & sign_match_mask
+
+                relevant_norm = grad[relevant_mask].norm() if relevant_mask.any() else torch.tensor(0.0, device=p.device, dtype=p.dtype)
+                signed_irrelevant_norm = p[signed_irrelevant_mask].norm() if signed_irrelevant_mask.any() else torch.tensor(0.0, device=p.device, dtype=p.dtype)
+
+                # STEP 3.2 - DEFINIZIONE DI a_{i,k}
+                x_abs = p.abs()
+                lower_bound = self._compute_lower_bound(
+                    variant,
+                    x_abs,
+                    relevant_norm,
+                    signed_irrelevant_norm,
+                    step_num,
+                    eps,
+                )
+
+                w_optim = state["w_optim"]
+                ratio = abs_grad / (w_optim + eps)
+
+                # STEP 3.3 - CLASSIFICAZIONE DI A_k
+                if variant in {"v3", "v4"}:
+                    acceptable_mask = signed_irrelevant_mask & (ratio >= lower_bound) & (ratio <= x_abs)
                 else:
-                    # Altrimenti consideriamo tutti i parametri come rilevanti
-                    relevant_mask = torch.ones_like(p, dtype=torch.bool)
-                
-                # 2. WEIGHT DECAY GLOBALE
-                # Applichiamo l'operazione di weight decay a tutte le variabili
-                if weight_decay > 0.0:
-                    p.sub_(p * lr * weight_decay)
+                    acceptable_mask = signed_irrelevant_mask & (ratio >= lower_bound)
 
-                # 3. AGGIORNAMENTO PARAMETRI RILEVANTI (Strategia Adagrad)
-                # Eseguiamo l'aggiornamento della discesa del gradiente solo sul sottoinsieme rilevante
-                if relevant_mask.any():
-                    rel_grad = grad[relevant_mask]                                           # Gradiente dei parametri rilevanti                
-                    state['sum'][relevant_mask] += rel_grad ** 2                             # Aggiornamento somma dei quadrati
-                    std = state['sum'][relevant_mask].sqrt().add_(eps)                       # Radice quadrata (con stabilizzazione)     
-                    p[relevant_mask] -= lr * rel_grad / std                                  # Step di ottimizzazione Adagrad
+                # STEP 3.4 - COSTRUZIONE DI O_k E D_k
+                optimisable_mask = relevant_mask | acceptable_mask
+                decreasable_mask = ~optimisable_mask
+
+                # STEP 2 - AGGIORNAMENTO DEI PESI w_i^O (solo parametri ottimizzabili)
+                if optimisable_mask.any():                                                              
+                    w_optim[optimisable_mask] = torch.sqrt( w_optim[optimisable_mask].pow(2) + grad[optimisable_mask].pow(2) )
+
+                                                                                                                    #----------------------------------------------
+                # STEP 4 - AGGIORNAMENTO DEI PARAMETRI OTTIMIZZABILI
+                s_optim = torch.zeros_like(p, memory_format=torch.preserve_format)                                  # Calcolo del passo di incremento
+                if optimisable_mask.any():
+                    s_optim[optimisable_mask] = -grad[optimisable_mask] / (w_optim[optimisable_mask] + eps)         # Aggiornamento dei parametri ottimizzabili
+
+                                                                                                                    #----------------------------------------------
+                # STEP 5.1 - AGGIORNAMENTO DEI PESI w_i^D
+                w_decr = state["w_decr"]
+                if decreasable_mask.any():
+                    w_decr[decreasable_mask] = torch.sqrt(
+                        w_decr[decreasable_mask].pow(2) + p[decreasable_mask].pow(2)
+                    )
+                s_decr = torch.zeros_like(p, memory_format=torch.preserve_format)
+                if decreasable_mask.any():
+                                                                                                                    #----------------------------------------------
+                    # STEP 5.2 - AGGIORNAMENTO DEI PARAMETRI DECREASABILI
+                    s_l = -p[decreasable_mask] / (w_decr[decreasable_mask] + eps)                                   # Calcolo del passo di decremento
+                    local_a = lower_bound[decreasable_mask]
+                    mag = torch.minimum(local_a, s_l.abs())
+
+                    local_sign_match = sign_match_mask[decreasable_mask]
+                    local_p = p[decreasable_mask]
+
+                    local_step = torch.zeros_like(local_p)
+                    local_step[local_sign_match] = -torch.sign(local_p[local_sign_match]) * mag[local_sign_match]   # Aggiornamento dei parametri decrementabili
+                    s_decr[decreasable_mask] = local_step
+                                                                                                                    #----------------------------------------------
+                # STEP 6 - COSTRUZIONE DEL NUOVO ITERATO
+                p.add_(lr * (s_optim + s_decr))
 
         return loss
