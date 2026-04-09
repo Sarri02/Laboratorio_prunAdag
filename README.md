@@ -1,37 +1,153 @@
-# Stochastic PrunAdag for Pruning-Aware Training of Neural Networks
+## Struttura del Progetto
 
-Il **pruning delle reti neurali** è una tecnica utilizzata per ridurre le dimensioni e la complessità dei modelli di deep learning, rimuovendo i parametri che contribuiscono in misura minima alle prestazioni del modello.  
+```
+#TODO: capire significato delle sigle (CLI, MLP, CNN, MNIST...)
+.
+├── main.py                      # Orchestratore esperimenti + CLI 
+├── prunadag.py                  # Ottimizzatore PrunAdag (core)
+├── prunadag_optimizer.py        # Factory per optimizers (Adam/PrunAdag)
+├── models.py                    # Definizioni modelli (MLP, CNN)
+├── data_utils.py                # Caricamento dataset (MNIST, FashionMNIST)
+├── train_eval.py                # Loop training e valutazione
+├── pruning_utils.py             # Algoritmi pruning post-addestramento
+├── outputs/                     # CSV e grafici di risultati
+└── README.md
+```
 
-Durante l'addestramento o dopo che un modello è stato addestrato, vengono identificati ed eliminati pesi, neuroni o interi filtri con un impatto minimo sulle previsioni.
+## Moduli
 
-Questa operazione può essere eseguita, ad esempio, eliminando i pesi con il valore assoluto più basso. Ciò si traduce in una rete più sparsa che richiede meno memoria e calcolo, mantenendo, si spera, una precisione simile.  
+### `prunadag.py`
+**Ottimizzatore PrunAdag** - Implementazione completa dell'Algoritmo
+- 4 varianti: v1, v2, v3, v4 (diversi tipi di bound inferiore)
+- Stato: contatori di passo separati per parametri ottimizzabili/decrescenti
+- **Parametri principali:**
+  - `lr`: learning rate (default 1e-2)
+  - `top_k_ratio`: percentuale pesi top-k mantenuti (default 0.1)
+  - `zeta`, `eps`: parametri numerici dell'algoritmo
+  - `variant`: scelta della variante algoritmica
 
-Il pruning è ampiamente utilizzato per rendere le reti neurali più efficienti per l'implementazione su dispositivi con risorse limitate.
+#TODO: cambiare nome
+### `prunadag_optimizer.py`
+**Factory** per istanziare ottimizzatori.
+- `build_optimizer(name, model, cfg)` → Adam o PrunAdag configurato
 
-Recentemente è stata proposta una variante dell'algoritmo classico AdaGrad, denominata **PrunAdag**, che esegue passaggi di ottimizzazione tenendo conto dello scenario di pruning e cercando di produrre una rete robusta al pruning post-addestramento.  
+### `models.py`
+**Architetture neurali** per i benchmark.
+- `MLPNet`: Flatten → Dense(784→256) + ReLU + Dropout → Dense(256→128) + ReLU + Dropout → Dense(128→10)
+- `SimpleCNN`: Conv(1→32) → MaxPool → Conv(32→64) → MaxPool → Classifier(64×7×7 → 128 → 10)
+- `build_model(name)` → istanza del modello selezionato
 
-A tal fine:
+### `data_utils.py`
+**Gestione dataset** e riproducibilità.
+- Supporto: MNIST, FashionMNIST (con normalizzazione automatica)
+- `set_seed(seed)`: configura seed globale
+- `get_data_loaders()`: ritorna train_loader e test_loader
 
-- gli aggiornamenti per discesa del gradiente vengono eseguiti solo rispetto a un sottoinsieme di variabili  
-- mentre l'insieme completo delle variabili subisce un'operazione di decadimento dei pesi ad ogni passo  
+### `train_eval.py`
+**Training e valutazione**.
+- `train_model()`: loop epoca per epoca, registra loss per ogni batch
+- `evaluate()`: computa loss e accuracy su set di test
+- `TrainResult`: dataclass con modello, history, metriche finali
 
-Il metodo è stato tuttavia studiato e testato solo in contesti **full-batch** e con problemi convessi.  
+### `pruning_utils.py`
+**Pruning magnitudo globale** post-addestramento.
+- `compute_global_threshold(model, keep_ratio)`: percentile dei pesi per soglia
+- `apply_global_magnitude_pruning()`: azzera pesi sotto soglia
+- `evaluate_pruning()`: valuta modello su 3 keep_ratio (10%, 20%, 50%)
 
-L'analisi della variante **minibatch** sulle reti neurali profonde sarebbe particolarmente rilevante per le applicazioni.
+### `main.py`
+**Orchestratore** esperimenti end-to-end.
+- CLI arguments: `--dataset`, `--model`, `--epochs`, `--seed`, `--variant`, ecc.
+- Training: Adam + PrunAdag paralleli
+- Pruning: valutazione post-addestramento
+- Export: CSV risultati + CSV history loss + grafico loss
+- Nominazione file: `results_{dataset}_{model}_seed{seed}_ep{epochs}_var{variant}.csv`
 
 ---
 
+## Utilizzo
 
+### Esecuzione basic: MNIST + MLP
+```bash
+python main.py --dataset mnist --model mlp --epochs 20 --batch-size 256
+```
 
-## Obiettivi del Progetto
+### FashionMNIST + CNN con seed personalizzato
+```bash
+python main.py --dataset fashionmnist --model cnn --epochs 20 --seed 123
+```
 
-* **Implementazione:** Sviluppare un ottimizzatore in **PyTorch** che implementi l'algoritmo PrunAdag per l'utilizzo in modalità minibatch.
-* **Validazione:** Testare il metodo su un set di problemi standard:
-    * Rete fully connected (MLP) con due layer nascosti su dataset **MNIST**.
-    * Rete convoluzionale semplice (CNN) su dataset **FashionMNIST**.
-* **Analisi Comparativa:** Confrontare le prestazioni della rete addestrata tramite PruneAdag con quelle della rete ottenuta utilizzando l'ottimizzatore Adam, come segue:
-    * Verificare se PruneAdag è in grado di addestrare correttamente la rete, accertandosi che la perdita sia effettivamente ridotta e che la qualità dell'adattamento sia paragonabile a quella della rete addestrata con Adam.
-    * Mostrare il grafico della diminuzione della perdita nel corso delle epoche, per ciascun problema e per entrambi gli algoritmi.
-    * Confrontare le prestazioni di test (in termini di accuratezza di test) dei due modelli.
-    * Verificare la qualità della rete (sia in termini di perdita di addestramento che di accuratezza di test) dopo che l'operazione di pruning è stata applicata alle due reti. Il pruning dovrebbe essere effettuato impostando a zero tutti i pesi tranne quello con il valore assoluto maggiore. Il test dovrebbe essere ripetuto impostando la percentuale dei pesi sopravvissuti (cioè non pari a zero) al 10%, 20% e 50%. 
+### Con parametri PrunAdag customizzati
+```bash
+python main.py --dataset mnist --model mlp --epochs 20 \
+  --lr-prunadag 0.01 --top-k-ratio 0.1 --variant v2
+```
+
+### Argomenti CLI
+
+| Argomento | Default | Descrizione |
+|-----------|---------|-------------|
+| `--dataset` | mnist | Dataset: `mnist` o `fashionmnist` |
+| `--model` | mlp | Modello: `mlp` o `cnn` |
+| `--epochs` | 10 | Numero epoche allenamento |
+| `--batch-size` | 128 | Dimensione minibatch |
+| `--seed` | 42 | Random seed (riproducibilità) |
+| `--lr-adam` | 0.001 | Learning rate Adam |
+| `--lr-prunadag` | 0.01 | Learning rate PrunAdag |
+| `--top-k-ratio` | 0.1 | Percentuale pesi top-k in PrunAdag |
+| `--variant` | v1 | Variante PrunAdag (v1/v2/v3/v4) |
+| `--num-workers` | 4 | Worker DataLoader |
+
+---
+
+## Output
+
+Per ogni esperimento vengono generati in `outputs/`:
+
+1. **`results_*.csv`** - Risultati per experiment
+   - Colonne: dataset, model, epochs, seed, variant, optimizer, phase (pre/post), keep_ratio, test_loss, test_accuracy
+   - Righe: 2 (pre-pruning: Adam, PrunAdag) + 6 (post-pruning: 2 ottimizzatori × 3 keep_ratio)
+
+2. **`loss_history_*.csv`** - Loss training per epoca
+   - Colonne: epoch, adam_train_loss, prunadag_train_loss
+   - Righe: 1 per epoca
+
+3. **`loss_plot_*.pdf`** - Grafico loss vs epoche (Adam vs PrunAdag)
+
+---
+
+## Flusso sperimentale
+
+```
+main()
+├── Carica dataset (MNIST/FashionMNIST)
+├── Allena con Adam
+│   ├── Forward pass
+│   ├── Backward pass  
+│   └── Update step (2 accumulator)
+├── Allena con PrunAdag
+│   └── [Stesso loop, diverso optimizer]
+├── Valuta accuracy pre-pruning
+├── Applica pruning magnitudo (10%, 20%, 50%)
+├── Valuta post-pruning
+├── Esporta CSV risultati
+├── Esporta CSV loss history
+└── Salva grafico
+```
+
+---
+
+## Note tecniche
+
+- **Dispositivo**: Automatico (CUDA se disponibile, CPU altrimenti)
+- **Criterio loss**: CrossEntropyLoss (classificazione)
+- **Normalizzazione**: Specifici per dataset (mean/std MNIST vs FashionMNIST)
+- **Pruning**: Solo pesi (non bias) nella ricerca del threshold globale
+
+---
+
+## Referenze
+
+- Articolo: `Documentazione/Articolo.txt`
+- Esperimenti: vedi CSV in `outputs/` 
 

@@ -1,0 +1,9 @@
+dataset,model,epochs,seed,variant,optimizer,phase,keep_ratio,test_loss,test_accuracy
+mnist,mlp,1,42,v1,adam,pre_pruning,1.0,0.15186845292448997,95.42
+mnist,mlp,1,42,v1,prunadag,pre_pruning,1.0,0.3047872266888618,91.76
+mnist,mlp,1,42,v1,adam,post_pruning,0.1,0.7374530199050904,92.6
+mnist,mlp,1,42,v1,prunadag,post_pruning,0.1,0.3880501777648926,90.78
+mnist,mlp,1,42,v1,adam,post_pruning,0.2,0.24585935349464416,95.16
+mnist,mlp,1,42,v1,prunadag,post_pruning,0.2,0.3235716675281525,91.49
+mnist,mlp,1,42,v1,adam,post_pruning,0.5,0.15905595101714134,95.29
+mnist,mlp,1,42,v1,prunadag,post_pruning,0.5,0.30457860711812973,91.73
