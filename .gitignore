@@ -208,3 +208,7 @@ __marimo__/
 
 #pdf
 istruzioni.pdf
+
+# grafici
+grafici/
+outputs/
