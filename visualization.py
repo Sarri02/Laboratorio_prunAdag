@@ -5,19 +5,18 @@ import matplotlib.pyplot as plt
 import os
 
 df = pd.read_csv('outputs/results_mnist_mlp_seed42_ep1_varv1.csv')
-df_post = df[df['phase'] == 'post_pruning']
 plt.figure(figsize=(10, 6))
 
-# adam
-adam_data = df_post[df_post['optimizer'] == 'adam']
-plt.plot(adam_data['keep_ratio'], adam_data['test_accuracy'], marker='o', label='Adam', color='blue')
+optimizers = ['adam', 'prunadag']
+colors = {'adam': 'blue', 'prunadag': 'red'}
+markers = {'adam': 'o', 'prunadag': 's'}
 
-# prunadag
-prunadag_data = df_post[df_post['optimizer'] == 'prunadag']
-plt.plot(prunadag_data['keep_ratio'], prunadag_data['test_accuracy'], marker='s', label='PrunADAG', color='red')
+for opt in optimizers:
+    opt_data = df[df['optimizer'] == opt].sort_values('keep_ratio')
+    plt.plot(opt_data['keep_ratio'], opt_data['test_accuracy'], marker=markers[opt], label=opt.capitalize(), color=colors[opt])
 
 # titoli ed etichette
-plt.title('Andamento dell\'Accuracy per Adam e PrunADAG (Post-Pruning)')
+plt.title('Andamento dell\'Accuracy per Adam e PrunADAG')
 plt.xlabel('Keep Ratio')
 plt.ylabel('Test Accuracy (%)')
 plt.legend()
