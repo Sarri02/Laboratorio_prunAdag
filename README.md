@@ -21,14 +21,17 @@ Laboratorio_prunAdag/
 ## Cosa Fa Ogni File
 
 ### Core Optimizer
+
 - **`prunadag.py`**: Implementazione della classe `PrunAdag`, un optimizer adattivo che classifica i parametri in "ottimizzabili" e "decrementabili" per favorire la sparsità
 
 ### Configurazione e Utility
+
 - **`config.py`**: Costanti (learning rate, batch size, epoche), dataclass `ExperimentConfig`, funzioni `set_seed()` e `ensure_dirs()`
 - **`models.py`**: MLP (fully-connected) e SimpleCNN con factory `get_model()`
 
 ### Training e Valutazione
-- **`train.py`**: 
+
+- **`train.py`**:
   - Loop di training (`train_epoch()`)
   - Valutazione (`evaluate()`)
   - Pruning per magnitude globale (`global_magnitude_prune()`)
@@ -36,7 +39,8 @@ Laboratorio_prunAdag/
   - Funzione `train_full_experiment()` che orchestra tutto
 
 ### Orchestrazione e Visualizzazione
-- **`main.py`**: 
+
+- **`main.py`**:
   - Carica MNIST e FashionMNIST automaticamente
   - Esegue griglia di esperimenti: (Adam, PrunAdag) × (MLP, CNN) × (MNIST, FashionMNIST)
   - Salva JSON con metriche
@@ -46,6 +50,7 @@ Laboratorio_prunAdag/
   - Stampa tabella riassuntiva
 
 ### Automation
+
 - **`run_all.sh`**: Script bash che esegue training e generazione grafici in sequenza
 
 ## Come Usare
@@ -61,7 +66,7 @@ source .venv-1/bin/activate
 pip install torch torchvision matplotlib numpy
 ```
 
-### Esecuzione 
+### Esecuzione
 
 ```bash
 # Attiva la virtual environment (se non già attiva)
@@ -72,18 +77,20 @@ bash run_all.sh
 ```
 
 Questo lancerà:
+
 1. Training su MNIST e FashionMNIST con Adam e PrunAdag
 2. Valutazione post-pruning a 10%, 20%, 50% survival ratio
 3. Generazione di grafici PDF e tabella riassuntiva
 
-
 ## Output
 
 ### Risultati Numerici
+
 - `results/*.json`: File JSON per ogni esperimento con metriche dettagliate
 - `results/figures/summary_table.txt`: Tabella riassuntiva in testo
 
 ### Grafici (PDF)
+
 - `results/figures/loss_*.pdf`: Curve di loss durante il training
 - `results/figures/test_accuracy_*.pdf`: Confronto accuracy test tra optimizer
 - `results/figures/pruning_*.pdf`: Impatto del pruning (pre/post) per ogni survival ratio
@@ -114,42 +121,3 @@ Non è necessario pre-scaricare nulla: `main.py` lo fa automaticamente.
 - **Modelli**: MLP (2 hidden layer da 256 e 128 neuroni) e CNN semplice
 - **Device**: Automaticamente GPU se disponibile, altrimenti CPU
 - **Riproducibilità**: Seed fisso per tutti i random number generator (torch, numpy, python)
-
-## Riflessioni Progettuali
-
-### Architettura Moduli
-La divisione logica è pensata per separare chiaramente responsabilità:
-- `config.py`: solo configurazione, nessuna logica
-- `models.py`: solo architetture, nessun training
-- `train.py`: training e metriche, non dataset loading
-- `main.py`: orchestrazione, non implementazione diretta
-
-Questo rende il codice leggibile, testabile e modulare.
-
-### Efficienza
-- I risultati JSON vengono salvati subito dopo ogni esperimento, non solo alla fine
-- `plots.py` legge JSON indipendentemente, può essere lanciato più volte
-
-## Troubleshooting
-
-**"ModuleNotFoundError: No module named 'torch'"**
-```bash
-pip install torch torchvision
-```
-
-**"No module named 'matplotlib'"**
-```bash
-pip install matplotlib
-```
-
-**I dataset non si scaricano**
-Verificare che `datasets/` abbia permessi di scrittura. `main.py` crea la cartella automaticamente.
-
-**GPU non viene usata**
-È normale: il codice usa CPU per impostazione predefinita se GPU non è disponibile. Verificare con `python -c "import torch; print(torch.cuda.is_available())"`
-
-## Author & References
-
-Basato su:
-- **Articolo**: "prunAdag: an adaptive pruning-aware gradient method" (Porcelli, Seraghiti, Toint, 2025)
-- **Laboratorio**: Optimization Methods, Università degli Studi di Firenze
