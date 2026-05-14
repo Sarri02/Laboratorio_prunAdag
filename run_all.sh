@@ -13,10 +13,21 @@ if [ -z "$VIRTUAL_ENV" ]; then
     source .venv-1/bin/activate
 fi
 
+# Leggi le varianti e i seed da config.py
+variants=$(python3 -c "from config import PRUNADAG_VARIANTS; print(' '.join(PRUNADAG_VARIANTS))")
+seeds=$(python3 -c "from config import PRUNADAG_SEEDS; print(' '.join(map(str, PRUNADAG_SEEDS)))")
+
 echo ""
 echo "1. Avvio TRAINING E PRUNING"
 echo "=========================================="
-python main.py
+
+for variant in $variants; do
+    for seed in $seeds; do
+        echo ""
+        echo "Eseguendo esperimenti con variante PrunAdag ${variant} e seed ${seed}..."
+        python main.py "${variant}" "${seed}"
+    done
+done
 
 echo ""
 echo "2. Generazione GRAFICI E TABELLE"
@@ -27,9 +38,3 @@ echo ""
 echo "=========================================="
 echo "✓ PIPELINE COMPLETATO CON SUCCESSO"
 echo "=========================================="
-echo ""
-echo "Risultati salvati in:"
-echo "  - JSON risultati: results/"
-echo "  - Grafici PDF: results/figures/"
-echo "  - Tabella riassuntiva: results/figures/summary_table.txt"
-echo ""

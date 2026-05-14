@@ -17,9 +17,9 @@ def get_device() -> torch.device:
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-# Funzione per contare il numero di parametri non zero del modello
-def count_nonzero_parameters(model: nn.Module) -> int:
-    return sum(int((p != 0).sum().item()) for p in model.parameters() if p.requires_grad)
+# Funzione per contare il numero di parametri non zero del modello (con tolleranza)
+def count_nonzero_parameters(model: nn.Module, tol: float = 1e-7) -> int:
+    return sum(int((p.abs() > tol).sum().item()) for p in model.parameters() if p.requires_grad)
 
 # Funzione per calcolare la sparsità del modello (percentuale di zeri)
 def get_sparsity(model: nn.Module) -> float:

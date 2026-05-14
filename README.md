@@ -124,9 +124,9 @@ Non è necessario pre-scaricare nulla: `main.py` lo fa automaticamente.
 
 ## TODO
 
-1. [ ]  Controllare sparsità sempre nulla.
+1. [X]  Controllare sparsità sempre nulla.
 2. [ ]  Aggiungere CSV.
-3. [ ]  Implementare almeno 10 iterazioni per fare una media.
-4. [ ]  Dividere i risultati in cartelle col nome del seed.
-5. [ ]  Possibile aggiunta di altre versioni V2 V3 V4.
-6. [ ]  Possibile aggiunta di altri modelli o datasets.
+3. [ ]  Aggiungi tempo di esecuzione.
+4. [ ]  Implementare almeno 10 iterazioni per fare una media.
+5. [X]  Dividere i risultati in cartelle col nome del seed.
+6. [X]  Possibile aggiunta di altre versioni V2 V3 V4.

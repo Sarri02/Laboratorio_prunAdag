@@ -6,14 +6,15 @@ import torch
 
 
 # COSTANTI DI CONFIGURAZIONE
-DATASET = "MNIST"                           # Può essere "MNIST" o "FashionMNIST" 
-BATCH_SIZE = 128                            # Dimensione del batch per il training
-NUM_EPOCHS = 20                             # Numero di epoche per il training    
-LR_ADAM = 1e-3                              # Learning rate per Adam
-LR_PRUNADAG = 1e-2                          # Learning rate per PrunAdag
-TOP_K_RATIO = 0.1                           # Percentuale di parametri rilevanti da selezionare (R_k) per PrunAdag
-PRUNING_RATIOS = [0.1, 0.2, 0.5]            # Percentuali di parametri da prunare (10%, 20%, 50%)
-SEED = 42                                   # Seed per la riproducibilità 
+DATASET = "MNIST"                           	# Può essere "MNIST" o "FashionMNIST" 
+BATCH_SIZE = 128                            	# Dimensione del batch per il training
+NUM_EPOCHS = 20                            		# Numero di epoche per il training    
+LR_ADAM = 1e-3                              	# Learning rate per Adam
+LR_PRUNADAG = 1e-2                          	# Learning rate per PrunAdag
+TOP_K_RATIO = 0.1                           	# Percentuale di parametri rilevanti da selezionare (R_k) per PrunAdag
+PRUNING_RATIOS = [0.1, 0.2, 0.5]            	# Percentuali di parametri da prunare (10%, 20%, 50%)
+PRUNADAG_VARIANTS = ["v1"]  					# Versioni di PrunAdag da provare
+PRUNADAG_SEEDS = [42]               			# Seeds da provare
 
 
 # PERCORSI DI DEFAULT
@@ -24,6 +25,7 @@ RESULTS_DIR = Path("results")
 # DATACLASS PER CONFIGURAZIONE ESPERIMENTO
 @dataclass
 class ExperimentConfig:
+	seed: int
 	dataset: str = DATASET
 	batch_size: int = BATCH_SIZE
 	num_epochs: int = NUM_EPOCHS
@@ -31,7 +33,6 @@ class ExperimentConfig:
 	lr_prunadag: float = LR_PRUNADAG
 	top_k_ratio: float = TOP_K_RATIO
 	pruning_ratios: list = field(default_factory=lambda: list(PRUNING_RATIOS))
-	seed: int = SEED
 	data_dir: Path = DATA_DIR
 	results_dir: Path = RESULTS_DIR
 
@@ -39,7 +40,8 @@ class ExperimentConfig:
 # SETUP FUNZIONI UTILI
 
 # Funzione per impostare i seed per la riproducibilità
-def set_seed(seed: int = SEED) -> None:
+
+def set_seed(seed: int) -> None:
 	random.seed(seed)
 	os.environ["PYTHONHASHSEED"] = str(seed)
 	try:
@@ -70,6 +72,8 @@ __all__ = [
 	"LR_PRUNADAG",
 	"TOP_K_RATIO",
 	"PRUNING_RATIOS",
+	"PRUNADAG_VARIANTS",
+	"PRUNADAG_SEEDS",
 	"DATA_DIR",
 	"RESULTS_DIR",
 ]

@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import List, Tuple
 import torch
@@ -62,6 +63,7 @@ def run_experiments(
     datasets_to_run: List[str] = None,
     optimizers_to_run: List[str] = None,
     models_to_run: List[str] = None,
+    prunadag_variant: str = "v1",
 ) -> List[ExperimentMetrics]:
 
     if datasets_to_run is None:
@@ -112,21 +114,26 @@ def run_experiments(
                 print("-" * 80)
 
                 # Esegui l'esperimento
-                metrics = train_full_experiment(
-                    model=model,
-                    train_loader=train_loader,
-                    test_loader=test_loader,
-                    optimizer_type=optimizer_name,
-                    dataset_name=dataset_name,
-                    model_name=model_name,
-                    num_epochs=cfg.num_epochs,
-                    device=None,  # Usa il device di default da train.py
-                    pruning_ratios=cfg.pruning_ratios,
-                )
+                kwargs = {
+                    "model": model,
+                    "train_loader": train_loader,
+                    "test_loader": test_loader,
+                    "optimizer_type": optimizer_name,
+                    "dataset_name": dataset_name,
+                    "model_name": model_name,
+                    "num_epochs": cfg.num_epochs,
+                    "device": None,  # Usa il device di default da train.py
+                    "pruning_ratios": cfg.pruning_ratios,
+                }
+                if optimizer_name.lower() == "prunadag":
+                    kwargs["prunadag_variant"] = prunadag_variant
+
+                metrics = train_full_experiment(**kwargs)
 
                 results.append(metrics)
 
                 # Salva immediatamente il risultato in JSON
+                variant_suffix = f"_{prunadag_variant}" if optimizer_name.lower() == "prunadag" else ""
                 result_filename = (
                     f"{optimizer_name.lower()}_{model_name.lower()}_{dataset_name.lower()}.json"
                 )
@@ -162,8 +169,20 @@ def print_summary(results: List[ExperimentMetrics]) -> None:
 # MAIN
 
 def main():
-    # Crea la configurazione di default
-    cfg = config.ExperimentConfig()
+    # Leggi la variante e il seed da riga di comando
+    prunadag_variant = "v1"  # default
+    prunadag_seed = 42  # default
+    
+    if len(sys.argv) > 1:
+        prunadag_variant = sys.argv[1]
+    if len(sys.argv) > 2:
+        prunadag_seed = int(sys.argv[2])
+
+    # Crea la configurazione di default passando il seed (default rimane in main)
+    cfg = config.ExperimentConfig(seed=prunadag_seed)
+
+    # Costruisci il path basato su variante e seed
+    cfg.results_dir = Path("results") / prunadag_variant / f"seed_{cfg.seed}"
 
     print(f"Configurazione:")
     print(f"  Dataset: {cfg.dataset}")
@@ -172,9 +191,11 @@ def main():
     print(f"  Data dir: {cfg.data_dir}")
     print(f"  Results dir: {cfg.results_dir}")
     print(f"  Pruning ratios: {cfg.pruning_ratios}")
+    print(f"  PrunAdag variant: {prunadag_variant}")
+    print(f"  Seed: {prunadag_seed}")
 
     # Esegui gli esperimenti
-    results = run_experiments(cfg)
+    results = run_experiments(cfg, prunadag_variant=prunadag_variant)
 
     # Stampa il riepilogo
     print_summary(results)
