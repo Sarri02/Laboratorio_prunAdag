@@ -6,15 +6,17 @@ import torch
 
 
 # COSTANTI DI CONFIGURAZIONE
-DATASETS = ["MNIST", "FashionMNIST"]       	# Dataset da eseguire
+DATASETS = ["MNIST", "FashionMNIST"]       		# Dataset da eseguire
 BATCH_SIZE = 128                            	# Dimensione del batch per il training
-NUM_EPOCHS = 20                            		# Numero di epoche per il training    
+NUM_EPOCHS = 15                            		# Numero di epoche per il training    
 LR_ADAM = 1e-3                              	# Learning rate per Adam
 LR_PRUNADAG = 1e-2                          	# Learning rate per PrunAdag
 TOP_K_RATIO = 0.1                           	# Percentuale di parametri rilevanti da selezionare (R_k) per PrunAdag
 PRUNING_RATIOS = [0.1, 0.2, 0.5]            	# Percentuali di parametri da prunare (10%, 20%, 50%)
-PRUNADAG_VARIANTS = ["v1"]  					# Versioni di PrunAdag da provare
+PRUNADAG_VARIANTS = ["v1"]  					# Versioni di PrunAdag 
 PRUNADAG_SEEDS = [42]               			# Seeds da provare
+OPTIMIZERS = ["Adam", "PrunAdag"]           	# Lista di ottimizzatori da testare
+MODELS = ["MLP", "CNN"]							# Lista di modelli da testare
 
 
 # PERCORSI DI DEFAULT
@@ -27,6 +29,8 @@ RESULTS_DIR = Path("results")
 class ExperimentConfig:
 	seed: int
 	datasets: list = field(default_factory=lambda: list(DATASETS))
+	optimizers: list = field(default_factory=lambda: list(OPTIMIZERS))
+	models: list = field(default_factory=lambda: list(MODELS))
 	batch_size: int = BATCH_SIZE
 	num_epochs: int = NUM_EPOCHS
 	lr_adam: float = LR_ADAM
@@ -66,6 +70,8 @@ __all__ = [
 	"set_seed",
 	"ensure_dirs",
 	"DATASETS",
+	"OPTIMIZERS",
+	"MODELS",
 	"BATCH_SIZE",
 	"NUM_EPOCHS",
 	"LR_ADAM",

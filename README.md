@@ -107,8 +107,11 @@ LR_ADAM = 1e-3                              	# Learning rate per Adam
 LR_PRUNADAG = 1e-2                          	# Learning rate per PrunAdag
 TOP_K_RATIO = 0.1                           	# Percentuale di parametri rilevanti da selezionare (R_k) per PrunAdag
 PRUNING_RATIOS = [0.1, 0.2, 0.5]            	# Percentuali di parametri da prunare (10%, 20%, 50%)
-PRUNADAG_VARIANTS = ["v1","v2"]  		# Versioni di PrunAdag da provare
-PRUNADAG_SEEDS = [42, 43]                       # Seed da testare
+PRUNADAG_VARIANTS = ["v1"]  			# Versioni di PrunAdag 
+PRUNADAG_SEEDS = [42]               		# Seeds da provare
+OPTIMIZERS = ["Adam", "PrunAdag"]           	# Lista di ottimizzatori da testare
+MODELS = ["MLP", "CNN"]				# Lista di modelli da testare
+
 ```
 
 ## TODO

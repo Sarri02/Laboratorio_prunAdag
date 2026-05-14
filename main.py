@@ -67,12 +67,11 @@ def run_experiments(
 ) -> List[ExperimentMetrics]:
 
     if datasets_to_run is None:
-        # Usa i dataset configurati in cfg come default effettivo.
         datasets_to_run = list(cfg.datasets)
     if optimizers_to_run is None:
-        optimizers_to_run = ["Adam", "PrunAdag"]
+        optimizers_to_run = list(cfg.optimizers)
     if models_to_run is None:
-        models_to_run = ["MLP", "CNN"]
+        models_to_run = list(cfg.models)
 
     # Impostazione del seed per riproducibilità
     config.set_seed(cfg.seed)
@@ -187,6 +186,8 @@ def main():
 
     print(f"Configurazione:")
     print(f"  Datasets: {cfg.datasets}")
+    print(f"  Optimizers: {cfg.optimizers}")
+    print(f"  Models: {cfg.models}")
     print(f"  Batch size: {cfg.batch_size}")
     print(f"  Epoche: {cfg.num_epochs}")
     print(f"  Data dir: {cfg.data_dir}")
