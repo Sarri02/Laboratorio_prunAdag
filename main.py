@@ -67,7 +67,8 @@ def run_experiments(
 ) -> List[ExperimentMetrics]:
 
     if datasets_to_run is None:
-        datasets_to_run = ["MNIST", "FashionMNIST"]
+        # Usa i dataset configurati in cfg come default effettivo.
+        datasets_to_run = list(cfg.datasets)
     if optimizers_to_run is None:
         optimizers_to_run = ["Adam", "PrunAdag"]
     if models_to_run is None:
@@ -185,7 +186,7 @@ def main():
     cfg.results_dir = Path("results") / prunadag_variant / f"seed_{cfg.seed}"
 
     print(f"Configurazione:")
-    print(f"  Dataset: {cfg.dataset}")
+    print(f"  Datasets: {cfg.datasets}")
     print(f"  Batch size: {cfg.batch_size}")
     print(f"  Epoche: {cfg.num_epochs}")
     print(f"  Data dir: {cfg.data_dir}")

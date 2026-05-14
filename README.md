@@ -100,33 +100,18 @@ Questo lancerà:
 Modifica i parametri in `config.py`:
 
 ```python
-BATCH_SIZE = 128           # Dimensione mini-batch
-NUM_EPOCHS = 20            # Epoche di training
-LR_ADAM = 1e-3             # Learning rate per Adam
-LR_PRUNADAG = 1e-2         # Learning rate per PrunAdag
-TOP_K_RATIO = 0.1          # Percentuale parametri rilevanti
-PRUNING_RATIOS = [0.1, 0.2, 0.5]  # Test a 10%, 20%, 50% survival
-SEED = 42                  # Seed per riproducibilità
+DATASETS = ["MNIST", "FashionMNIST"]       	# Dataset da eseguire
+BATCH_SIZE = 128                            	# Dimensione del batch per il training
+NUM_EPOCHS = 20                            	# Numero di epoche per il training  
+LR_ADAM = 1e-3                              	# Learning rate per Adam
+LR_PRUNADAG = 1e-2                          	# Learning rate per PrunAdag
+TOP_K_RATIO = 0.1                           	# Percentuale di parametri rilevanti da selezionare (R_k) per PrunAdag
+PRUNING_RATIOS = [0.1, 0.2, 0.5]            	# Percentuali di parametri da prunare (10%, 20%, 50%)
+PRUNADAG_VARIANTS = ["v1","v2"]  		# Versioni di PrunAdag da provare
+PRUNADAG_SEEDS = [42, 43]                       # Seed da testare
 ```
-
-## Dataset
-
-I dataset MNIST e FashionMNIST vengono **scaricati automaticamente** da `torchvision` la prima volta che vengono usati. Il download avviene in `datasets/`.
-
-Non è necessario pre-scaricare nulla: `main.py` lo fa automaticamente.
-
-## Note Tecniche
-
-- **Optimizer**: PrunAdag con 4 varianti (v1, v2, v3, v4) configurabili in `train.py`
-- **Modelli**: MLP (2 hidden layer da 256 e 128 neuroni) e CNN semplice
-- **Device**: Automaticamente GPU se disponibile, altrimenti CPU
-- **Riproducibilità**: Seed fisso per tutti i random number generator (torch, numpy, python)
 
 ## TODO
 
-1. [X]  Controllare sparsità sempre nulla.
-2. [ ]  Aggiungere CSV.
-3. [ ]  Aggiungi tempo di esecuzione.
-4. [ ]  Implementare almeno 10 iterazioni per fare una media.
-5. [X]  Dividere i risultati in cartelle col nome del seed.
-6. [X]  Possibile aggiunta di altre versioni V2 V3 V4.
+* [ ]  Aggiungere CSV.
+* [ ]  Correggere generazione grafici.

@@ -6,7 +6,7 @@ import torch
 
 
 # COSTANTI DI CONFIGURAZIONE
-DATASET = "MNIST"                           	# Può essere "MNIST" o "FashionMNIST" 
+DATASETS = ["MNIST", "FashionMNIST"]       	# Dataset da eseguire
 BATCH_SIZE = 128                            	# Dimensione del batch per il training
 NUM_EPOCHS = 20                            		# Numero di epoche per il training    
 LR_ADAM = 1e-3                              	# Learning rate per Adam
@@ -26,7 +26,7 @@ RESULTS_DIR = Path("results")
 @dataclass
 class ExperimentConfig:
 	seed: int
-	dataset: str = DATASET
+	datasets: list = field(default_factory=lambda: list(DATASETS))
 	batch_size: int = BATCH_SIZE
 	num_epochs: int = NUM_EPOCHS
 	lr_adam: float = LR_ADAM
@@ -65,7 +65,7 @@ __all__ = [
 	"ExperimentConfig",
 	"set_seed",
 	"ensure_dirs",
-	"DATASET",
+	"DATASETS",
 	"BATCH_SIZE",
 	"NUM_EPOCHS",
 	"LR_ADAM",

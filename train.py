@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Dict, List, Tuple
 import json
+import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -150,6 +151,7 @@ class ExperimentMetrics:
     pruning_ratios: List[float]  # [0.1, 0.2, 0.5]
     test_accuracy_after_pruning: Dict[str, float]  # {"10%": 0.95, "20%": 0.94, ...}
     num_parameters: int
+    execution_time: float  # Tempo totale di esecuzione in secondi
 
     def to_dict(self) -> Dict:
         """Converte le metriche in un dizionario serializzabile."""
@@ -183,6 +185,9 @@ def train_full_experiment(
     device: torch.device | None = None,
     pruning_ratios: List[float] = None,
 ) -> ExperimentMetrics:
+
+    # Inizio misurazione del tempo
+    start_time = time.time()
 
     if pruning_ratios is None:
         pruning_ratios = [0.1, 0.2, 0.5]
@@ -243,6 +248,9 @@ def train_full_experiment(
 
         print(f"  After {key} survival pruning: Test Acc = {acc_after:.4f}")
 
+    # Calcola il tempo totale di esecuzione
+    execution_time = time.time() - start_time
+
     # Costruisci e restituisci le metriche
     metrics = ExperimentMetrics(
         optimizer_name=optimizer_type,
@@ -256,6 +264,7 @@ def train_full_experiment(
         pruning_ratios=pruning_ratios,
         test_accuracy_after_pruning=test_acc_after_pruning,
         num_parameters=count_parameters(model),
+        execution_time=execution_time,
     )
 
     return metrics
