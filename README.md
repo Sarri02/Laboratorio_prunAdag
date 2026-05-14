@@ -121,3 +121,12 @@ Non è necessario pre-scaricare nulla: `main.py` lo fa automaticamente.
 - **Modelli**: MLP (2 hidden layer da 256 e 128 neuroni) e CNN semplice
 - **Device**: Automaticamente GPU se disponibile, altrimenti CPU
 - **Riproducibilità**: Seed fisso per tutti i random number generator (torch, numpy, python)
+
+## TODO
+
+1. [ ]  Controllare sparsità sempre nulla.
+2. [ ]  Aggiungere CSV.
+3. [ ]  Implementare almeno 10 iterazioni per fare una media.
+4. [ ]  Dividere i risultati in cartelle col nome del seed.
+5. [ ]  Possibile aggiunta di altre versioni V2 V3 V4.
+6. [ ]  Possibile aggiunta di altri modelli o datasets.

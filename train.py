@@ -21,7 +21,6 @@ def count_parameters(model: nn.Module) -> int:
 def count_nonzero_parameters(model: nn.Module) -> int:
     return sum(int((p != 0).sum().item()) for p in model.parameters() if p.requires_grad)
 
-#TODO: controllare perchè sparsità è sempre 0.0
 # Funzione per calcolare la sparsità del modello (percentuale di zeri)
 def get_sparsity(model: nn.Module) -> float:
     total = count_parameters(model)
