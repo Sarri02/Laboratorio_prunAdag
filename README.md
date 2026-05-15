@@ -111,10 +111,4 @@ PRUNADAG_VARIANTS = ["v1"]  			# Versioni di PrunAdag
 PRUNADAG_SEEDS = [42]               		# Seeds da provare
 OPTIMIZERS = ["Adam", "PrunAdag"]           	# Lista di ottimizzatori da testare
 MODELS = ["MLP", "CNN"]				# Lista di modelli da testare
-
 ```
-
-## TODO
-
-* [ ]  Aggiungere CSV.
-* [ ]  Correggere generazione grafici.
