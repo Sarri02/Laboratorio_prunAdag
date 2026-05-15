@@ -12,13 +12,6 @@ def _fmt_num(x: Any) -> str:
 
 
 def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experiments.csv") -> None:
-    """Salva le metriche dell'esperimento in un CSV (una riga per esperimento).
-
-    - `metrics` deve essere un dizionario prodotto da `ExperimentMetrics.to_dict()`.
-    - Il CSV viene creato con colonne per-epoca `train_loss_epN` e `train_acc_epN`, e colonne
-      per ciascun pruning ratio `test_acc_after_pruning_{pct}%`.
-    - I valori numerici vengono formattati con 5 cifre decimali.
-    """
     csv_path = Path(csv_path)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 

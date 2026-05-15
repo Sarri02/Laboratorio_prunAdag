@@ -29,11 +29,6 @@ for variant in $variants; do
 done
 
 echo ""
-echo "2. Generazione GRAFICI E TABELLE"
-echo "=========================================="
-python plots.py
-
-echo ""
 echo "=========================================="
 echo "✓ PIPELINE COMPLETATO CON SUCCESSO"
 echo "=========================================="

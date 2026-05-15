@@ -38,62 +38,23 @@ Laboratorio_prunAdag/
   - Classe `ExperimentMetrics` per salvare risultati in JSON
   - Funzione `train_full_experiment()` che orchestra tutto
 
-### Orchestrazione e Visualizzazione
+### Orchestrazione
 
 - **`main.py`**:
+
   - Carica MNIST e FashionMNIST automaticamente
   - Esegue griglia di esperimenti: (Adam, PrunAdag) × (MLP, CNN) × (MNIST, FashionMNIST)
   - Salva JSON con metriche
-- **`plots.py`**:
-  - Legge JSON da `results/`
-  - Genera grafici: curve di loss, confronto accuracy, confronto pre/post pruning
-  - Stampa tabella riassuntiva
 
 ### Automation
 
 - **`run_all.sh`**: Script bash che esegue training e generazione grafici in sequenza
-
-## Come Usare
-
-### Prerequisiti
-
-```bash
-# Crea una virtual environment (opzionale, se non già fatta)
-python3 -m venv .venv-1
-source .venv-1/bin/activate
-
-# Installa dipendenze
-pip install torch torchvision matplotlib numpy
-```
-
-### Esecuzione
-
-```bash
-# Attiva la virtual environment (se non già attiva)
-source .venv-1/bin/activate
-
-# Esegui tutto: training + grafici
-bash run_all.sh
-```
-
-Questo lancerà:
-
-1. Training su MNIST e FashionMNIST con Adam e PrunAdag
-2. Valutazione post-pruning a 10%, 20%, 50% survival ratio
-3. Generazione di grafici PDF e tabella riassuntiva
 
 ## Output
 
 ### Risultati Numerici
 
 - `results/*.json`: File JSON per ogni esperimento con metriche dettagliate
-- `results/figures/summary_table.txt`: Tabella riassuntiva in testo
-
-### Grafici (PDF)
-
-- `results/figures/loss_*.pdf`: Curve di loss durante il training
-- `results/figures/test_accuracy_*.pdf`: Confronto accuracy test tra optimizer
-- `results/figures/pruning_*.pdf`: Impatto del pruning (pre/post) per ogni survival ratio
 
 ## Configurazione
 
@@ -111,4 +72,5 @@ PRUNADAG_VARIANTS = ["v1"]  			# Versioni di PrunAdag
 PRUNADAG_SEEDS = [42]               		# Seeds da provare
 OPTIMIZERS = ["Adam", "PrunAdag"]           	# Lista di ottimizzatori da testare
 MODELS = ["MLP", "CNN"]				# Lista di modelli da testare
+
 ```
