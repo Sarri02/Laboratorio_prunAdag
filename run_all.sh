@@ -13,7 +13,6 @@ if [ -z "$VIRTUAL_ENV" ]; then
     source .venv-1/bin/activate
 fi
 
-# Leggi le varianti e i seed da config.py
 variants=$(python3 -c "from config import PRUNADAG_VARIANTS; print(' '.join(PRUNADAG_VARIANTS))")
 seeds=$(python3 -c "from config import PRUNADAG_SEEDS; print(' '.join(map(str, PRUNADAG_SEEDS)))")
 

@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer, Adam
 from prunadag import PrunAdag
+from csv_logger import save_experiment_csv
 
 # Funzione per ottenere il dispositivo (GPU se disponibile, altrimenti CPU)
 def get_device() -> torch.device:
@@ -184,6 +185,7 @@ def train_full_experiment(
     num_epochs: int,
     device: torch.device | None = None,
     pruning_ratios: List[float] = None,
+    prunadag_variant: str = "v1",
 ) -> ExperimentMetrics:
 
     # Inizio misurazione del tempo
@@ -202,7 +204,7 @@ def train_full_experiment(
     if optimizer_type.lower() == "adam":
         optimizer = Adam(model.parameters(), lr=1e-3)
     elif optimizer_type.lower() == "prunadag":
-        optimizer = PrunAdag(model.parameters(), lr=1e-2, top_k_ratio=0.1)
+        optimizer = PrunAdag(model.parameters(), lr=1e-2, top_k_ratio=0.1, variant=prunadag_variant)
     else:
         raise ValueError(f"Optimizer non supportato: {optimizer_type}")
 
@@ -252,8 +254,16 @@ def train_full_experiment(
     execution_time = time.time() - start_time
 
     # Costruisci e restituisci le metriche
+    # Prepara nome ottimizzatore con versione se applicabile
+    opt_name = optimizer_type
+    try:
+        if optimizer_type.lower() == "prunadag":
+            opt_name = f"{optimizer_type}_{prunadag_variant}"
+    except Exception:
+        opt_name = optimizer_type
+
     metrics = ExperimentMetrics(
-        optimizer_name=optimizer_type,
+        optimizer_name=opt_name,
         dataset_name=dataset_name,
         model_name=model_name,
         train_loss=train_losses,
@@ -266,5 +276,11 @@ def train_full_experiment(
         num_parameters=count_parameters(model),
         execution_time=execution_time,
     )
+
+    # Salva i risultati in CSV dedicato
+    try:
+        save_experiment_csv(metrics.to_dict())
+    except Exception as e:
+        print(f"Errore nel salvare il CSV dell'esperimento: {e}")
 
     return metrics
