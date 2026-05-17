@@ -25,6 +25,7 @@ def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experimen
         "optimizer_name",
         "dataset_name",
         "model_name",
+        "seed",
         "num_parameters",
         "num_epochs",
     ]
@@ -62,6 +63,7 @@ def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experimen
     row["optimizer_name"] = metrics.get("optimizer_name", "")
     row["dataset_name"] = metrics.get("dataset_name", "")
     row["model_name"] = metrics.get("model_name", "")
+    row["seed"] = str(metrics.get("seed", ""))
     row["num_parameters"] = str(metrics.get("num_parameters", ""))
     row["num_epochs"] = str(num_epochs)
 
