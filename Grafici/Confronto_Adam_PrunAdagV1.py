@@ -7,7 +7,7 @@ import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CSV_PATH = BASE_DIR / "results" / "Confronto_Adam_PrunAdagV1.csv"
-OUTPUT_DIR = BASE_DIR / "Grafici" / "Confronto_Adam_PrunAdagV1"
+OUTPUT_DIR = BASE_DIR / "grafici" / "Confronto_Adam_PrunAdagV1"
 
 TRAIN_LOSS_COLUMNS = [f"train_loss_ep{epoch}" for epoch in range(1, 11)]
 TRAIN_ACCURACY_COLUMNS = [f"train_acc_ep{epoch}" for epoch in range(1, 11)]
@@ -146,7 +146,10 @@ def plot_bar_metric(
 			means.append(series.mean())
 			stds.append(series.std(ddof=0))
 
-		ax.bar(positions, means, width=bar_width, yerr=stds, capsize=4, color=colors)
+		# draw bars once after collecting means/stds for all optimizers
+		bars = ax.bar(positions, means, width=bar_width, yerr=stds, capsize=4, color=colors)
+		labels = [f"{m:.3f}" if not np.isnan(m) else "" for m in means]
+		ax.bar_label(bars, labels=labels, padding=3, fontsize=9, label_type='center', color='black')
 		ax.set_xticks(positions)
 		ax.set_xticklabels(OPTIMIZER_ORDER)
 		ax.set_title(experiment)
@@ -264,7 +267,10 @@ def plot_execution_time(data: pd.DataFrame) -> None:
 			means.append(series.mean())
 			stds.append(series.std(ddof=0))
 
-		ax.bar(positions, means, width=bar_width, yerr=stds, capsize=4, color=colors)
+		# draw bars once after collecting means/stds for all optimizers
+		bars = ax.bar(positions, means, width=bar_width, yerr=stds, capsize=4, color=colors)
+		labels = [f"{m:.2f}" if not np.isnan(m) else "" for m in means]
+		ax.bar_label(bars, labels=labels, padding=3, fontsize=9, label_type='center', color='black')
 		ax.set_xticks(positions)
 		ax.set_xticklabels(OPTIMIZER_ORDER)
 		ax.set_title(experiment)

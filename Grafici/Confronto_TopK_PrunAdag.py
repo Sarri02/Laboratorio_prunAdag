@@ -7,7 +7,7 @@ import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CSV_PATH = BASE_DIR / "results" / "Confronto_TopK_PrunAdag.csv"
-OUTPUT_DIR = BASE_DIR / "Grafici" / "Confronto_TopK_PrunAdag"
+OUTPUT_DIR = BASE_DIR / "grafici" / "Confronto_TopK_PrunAdag"
 
 EXPERIMENT_ORDER = [
 	"MNIST | MLP",
@@ -19,7 +19,6 @@ PRUNING_COLUMNS = [
 	("test_acc_after_pruning_30%", "30%"),
 	("test_acc_after_pruning_20%", "20%"),
 	("test_acc_after_pruning_10%", "10%"),
-	("test_acc_after_pruning_5%", "5%"),
 ]
 
 PRUNING_COLOR_MAP = {
@@ -46,13 +45,23 @@ def load_data() -> pd.DataFrame:
 	required_columns = {
 		"dataset_name",
 		"model_name",
+		"optimizer_name",
 		"top_k_ratio",
 		"test_accuracy",
 		"test_acc_after_pruning_50%",
 		"test_acc_after_pruning_30%",
 		"test_acc_after_pruning_20%",
 		"test_acc_after_pruning_10%",
-		"test_acc_after_pruning_5%",
+		"train_acc_ep1",
+		"train_acc_ep2",
+		"train_acc_ep3",
+		"train_acc_ep4",
+		"train_acc_ep5",
+		"train_acc_ep6",
+		"train_acc_ep7",
+		"train_acc_ep8",
+		"train_acc_ep9",
+		"train_acc_ep10",
 	}
 	missing = required_columns - set(data.columns)
 	if missing:
@@ -109,18 +118,30 @@ def plot_baseline_vs_topk(data: pd.DataFrame) -> None:
 			else:
 				heights.append(float(pd.to_numeric(row["test_accuracy"].iloc[0], errors="coerce")))
 			colors.append(TOPK_COLOR_MAP.get(float(r), "#888888"))
-			labels.append(str(r))
+			labels.append(f"TopK {r}")
 
-		bars = ax.bar(x, heights, width=bar_width, color=colors, edgecolor="black")
-		ax.set_xticks(x)
-		ax.set_xticklabels([f"TopK {r}" for r in ratios])
-		# set consistent y-limits for readability and place numeric labels under bars
+		# Adam baseline (if present) appended as an extra bar
+		adam_rows = subset[subset["optimizer_name"].astype(str).str.contains("adam", case=False, na=False)]
+		adam_vals = pd.to_numeric(adam_rows["test_accuracy"], errors="coerce").dropna()
+		if not adam_vals.empty:
+			adam_mean = float(adam_vals.mean())
+		else:
+			adam_mean = np.nan
+		heights.append(adam_mean)
+		colors.append("#9467BD")
+		labels.append("Adam")
+
+		x_all = np.arange(len(labels))
+		x_all = np.arange(len(labels))
+		# replace NaNs with zeros for plotting, keep labels blank for missing bars
+		heights_clean = [0.0 if np.isnan(h) else h for h in heights]
+		bars = ax.bar(x_all, heights_clean, width=bar_width, color=colors, edgecolor="black")
+		ax.set_xticks(x_all)
+		ax.set_xticklabels(labels)
+		# set consistent y-limits for readability and place numeric labels centered inside bars
 		ax.set_ylim(0.55, 1.0)
-		label_y = 0.8
-		for xi, h in zip(x, heights):
-			if np.isnan(h):
-				continue
-			ax.text(xi, label_y, f"{h:.3f}", ha="center", va="bottom", fontsize=9)
+		labels_text = [f"{h:.3f}" if not np.isnan(h) else "" for h in heights]
+		ax.bar_label(bars, labels=labels_text, label_type='center', color='black', fontsize=9)
 		ax.set_title(experiment)
 		ax.set_xlabel("TopK ratio")
 		ax.grid(axis="y", alpha=0.25)
@@ -160,40 +181,96 @@ def plot_pruning_drop(data: pd.DataFrame) -> None:
 			row = subset[subset["top_k_ratio"] == ratio]
 			if row.empty:
 				continue
-			# compute drop per pruning level
-			drops = []
+			# compute absolute accuracy per pruning level
+			accs = []
 			for col, _ in PRUNING_COLUMNS:
-				val_base = pd.to_numeric(row["test_accuracy"].iloc[0], errors="coerce")
 				val_pruned = pd.to_numeric(row[col].iloc[0], errors="coerce")
-				drops.append(float(val_base - val_pruned))
+				accs.append(float(val_pruned))
 
 			color = ratio_color_map.get(float(ratio), colors[i % len(colors)])
 			ax.plot(
 				positions,
-				drops,
+				accs,
 				marker="o",
 				linewidth=2,
 				label=f"TopK {ratio}",
 				color=color,
 			)
 
-		ax.axhline(0.0, color="black", linewidth=1, alpha=0.35)
+		# Adam line (if present) — plot absolute pruned accuracies
+		adam_rows = subset[subset["optimizer_name"].astype(str).str.contains("adam", case=False, na=False)]
+		if not adam_rows.empty:
+			adam_accs = []
+			for col, _ in PRUNING_COLUMNS:
+				adam_pruned = pd.to_numeric(adam_rows[col].mean(), errors="coerce")
+				adam_accs.append(float(adam_pruned))
+			ax.plot(positions, adam_accs, marker="o", linewidth=2, label="Adam", color="#9467BD")
+
 		ax.set_title(experiment)
 		ax.set_xlabel("Pruning level")
 		ax.set_xticks(positions)
 		ax.set_xticklabels(pruning_labels)
+		ax.set_ylim(0.8, 1.0)
 		ax.grid(alpha=0.25)
 		ax.legend(title="TopK ratio")
 
-	axes[0].set_ylabel("Accuracy drop vs baseline")
-	fig.suptitle("Accuracy loss induced by pruning", fontsize=14)
-	save_figure(fig, "02_pruning_accuracy_drop.pdf")
+	axes[0].set_ylabel("Test accuracy")
+	fig.suptitle("Accuracy at different pruning levels", fontsize=14)
+	save_figure(fig, "02_pruning_accuracy_levels.pdf")
+
+
+def plot_training_comparison(data: pd.DataFrame) -> None:
+	"""Plot training accuracy across epochs comparing Adam vs PrunAdag (different TopK ratios)."""
+	epoch_columns = [f"train_acc_ep{e}" for e in range(1, 11)]
+
+	fig, axes = plt.subplots(1, len(EXPERIMENT_ORDER), figsize=(7 * len(EXPERIMENT_ORDER), 5), sharey=True)
+	axes = np.atleast_1d(axes)
+
+	for ax, experiment in zip(axes, EXPERIMENT_ORDER):
+		subset = data[data["experiment"] == experiment]
+		if subset.empty:
+			ax.set_axis_off()
+			continue
+
+		# Adam curve (if present)
+		adam_mask = subset["optimizer_name"].astype(str).str.contains("adam", case=False, na=False)
+		if adam_mask.any():
+			adam_mean = subset.loc[adam_mask, epoch_columns].apply(pd.to_numeric, errors="coerce").mean()
+			ax.plot(range(1, 11), adam_mean.values, marker="o", linewidth=2, label="Adam", color="#9467BD")
+
+		# PrunAdag curves per TopK
+		prun_mask = subset["optimizer_name"].astype(str).str.contains("prunadag", case=False, na=False)
+		prun_subset = subset[prun_mask].sort_values("top_k_ratio")
+		if not prun_subset.empty:
+			ratios = sorted(prun_subset["top_k_ratio"].dropna().unique())
+			for ratio in ratios:
+				row = prun_subset[prun_subset["top_k_ratio"] == ratio]
+				if row.empty:
+					continue
+				mean_curve = row[epoch_columns].apply(pd.to_numeric, errors="coerce").mean()
+				color = TOPK_COLOR_MAP.get(float(ratio), None)
+				ax.plot(range(1, 11), mean_curve.values, marker="o", linewidth=2, label=f"PrunAdag TopK {ratio}", color=color)
+
+		ax.set_xlabel("Epoch")
+		ax.set_xticks(list(range(1, 11)))
+		ax.set_title(experiment)
+		ax.grid(alpha=0.25)
+
+	axes[0].set_ylabel("Training accuracy")
+	fig.suptitle("Training accuracy across epochs: Adam vs PrunAdag (TopK)", fontsize=14)
+	# Put a small, separate legend on each subplot for readability
+	for ax in axes:
+		if not getattr(ax, "get_visible", lambda: True)():
+			continue
+		ax.legend(title="Optimizer", fontsize=9, title_fontsize=9, loc="lower right")
+	save_figure(fig, "03_training_accuracy_comparison.pdf")
 
 
 def main() -> None:
 	data = add_labels(load_data())
 	plot_baseline_vs_topk(data)
 	plot_pruning_drop(data)
+	plot_training_comparison(data)
 	print(f"Saved plots to {OUTPUT_DIR}")
 
 

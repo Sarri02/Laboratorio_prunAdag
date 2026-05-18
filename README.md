@@ -30,7 +30,7 @@ csv_logger.py      # Logging dei risultati in CSV/JSON
 run_all.sh         # Script per eseguire pipeline completa
 datasets/          # Raw MNIST e FashionMNIST (scaricati automaticamente)
 results/           # Output esperimenti: `results/<variant>/seed_<n>/`
-Grafici/           # Script e grafici per confronto dei risultati
+grafici/           # Script e grafici per confronto dei risultati
 documentazione/    # Articolo e template
 ```
 
@@ -44,6 +44,6 @@ documentazione/    # Articolo e template
 
 ## Output
 
-- I risultati per esperimento sono salvati in `results/<variant>/seed_<n>/` in formato JSON; gli script per generare grafici si trovano in `Grafici/`.
- - Nomi file: `<optimizer>_<model>_<dataset>[_topk_<N>].json`.
- - Per GPU: PyTorch rileva automaticamente `cuda` se disponibile.
+- I risultati per esperimento sono salvati in `results/<variant>/seed_<n>/` in formato JSON; gli script per generare grafici si trovano in `grafici/`.
+- Nomi file: `<optimizer>_<model>_<dataset>[_topk_<N>].json`.
+- Per GPU: PyTorch rileva automaticamente `cuda` se disponibile.

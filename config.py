@@ -6,7 +6,7 @@ import torch
 
 
 # COSTANTI DI CONFIGURAZIONE
-DATASETS = ["FashionMNIST"]       				# Dataset da eseguire
+DATASETS = ["MNIST"]       						# Dataset da eseguire
 BATCH_SIZE = 128                            	# Dimensione del batch per il training
 NUM_EPOCHS = 10                            		# Numero di epoche per il training    
 LR_ADAM = 1e-3                              	# Learning rate per Adam
@@ -15,8 +15,8 @@ TOP_K_RATIOS = [0.5, 0.2, 0.1]              	# Lista di top-k ratio da provare i
 PRUNING_RATIOS = [0.5, 0.3, 0.2, 0.1, 0.05] 	# Percentuali di parametri da prunare (10%, 20%, 50%)
 PRUNADAG_VARIANTS = ["v1"]  					# Versioni di PrunAdag 
 PRUNADAG_SEEDS = [123]       					# Seeds da provare
-OPTIMIZERS = ["PrunAdag"]           			# Lista di ottimizzatori da testare
-MODELS = ["CNN"]								# Lista di modelli da testare
+OPTIMIZERS = ["Adam"]           			    # Lista di ottimizzatori da testare
+MODELS = ["MLP"]								# Lista di modelli da testare
 
 
 # PERCORSI DI DEFAULT

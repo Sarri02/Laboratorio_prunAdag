@@ -6,7 +6,7 @@ import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CSV_PATH = BASE_DIR / "results" / "Confronto_Versioni_PrunAdag.csv"
-OUTPUT_DIR = BASE_DIR / "Grafici" / "Confronto_Versioni_PrunAdag"
+OUTPUT_DIR = BASE_DIR / "grafici" / "Confronto_Versioni_PrunAdag"
 
 # Color mapping for versions: v1 (orange), v2 (red), v3 (green), v4 (blue)
 COLOR_MAP = {
@@ -100,7 +100,7 @@ def plot_execution_time(data: pd.DataFrame) -> None:
 		ax.bar(positions, values, width=width, label=version, color=colors[idx])
 
 	ax.set_xticks(list(x))
-	ax.set_xticklabels(experiments, rotation=20, ha="right")
+	ax.set_xticklabels(experiments, rotation=0, ha="center")
 	ax.set_ylabel("Average execution time (s)")
 	ax.set_title("Comparison of average execution times")
 	ax.legend(title="Version")
