@@ -132,7 +132,7 @@ def global_magnitude_prune(model: nn.Module, survival_ratio: float) -> None:
         for param in model.parameters():
             if param.requires_grad:
                 mask = param.abs() >= threshold
-                param.mul_(mask)
+                param.mul_(mask) # Hadamard Product: mantiene i valori sopra la soglia, azzera quelli sotto
 
 
 
