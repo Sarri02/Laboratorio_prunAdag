@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from typing import List, Tuple
+from copy import deepcopy
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -73,6 +74,9 @@ def run_experiments(
     if models_to_run is None:
         models_to_run = list(cfg.models)
 
+    top_k_ratios_to_run = list(cfg.top_k_ratios)
+    default_top_k_ratio = top_k_ratios_to_run[0] if top_k_ratios_to_run else 0.1
+
     # Impostazione del seed per riproducibilità
     config.set_seed(cfg.seed)
 
@@ -80,7 +84,12 @@ def run_experiments(
     config.ensure_dirs()
 
     results: List[ExperimentMetrics] = []
-    total_experiments = len(datasets_to_run) * len(optimizers_to_run) * len(models_to_run)
+    total_experiments = 0
+    for optimizer_name in optimizers_to_run:
+        if optimizer_name.lower() == "prunadag":
+            total_experiments += len(datasets_to_run) * len(models_to_run) * len(top_k_ratios_to_run)
+        else:
+            total_experiments += len(datasets_to_run) * len(models_to_run)
     current_exp = 0
 
     print("=" * 80)
@@ -106,40 +115,67 @@ def run_experiments(
         for model_name in models_to_run:
             # Istanzia il modello
             print(f"Creazione modello {model_name}...")
-            model = get_model(model_name)
+            base_model = get_model(model_name)
 
             for optimizer_name in optimizers_to_run:
-                current_exp += 1
-                print(f"\n[{current_exp}/{total_experiments}] {optimizer_name} + {model_name} + {dataset_name}")
-                print("-" * 80)
-
-                # Esegui l'esperimento
-                kwargs = {
-                    "model": model,
-                    "train_loader": train_loader,
-                    "test_loader": test_loader,
-                    "optimizer_type": optimizer_name,
-                    "dataset_name": dataset_name,
-                    "model_name": model_name,
-                    "num_epochs": cfg.num_epochs,
-                    "device": None,  # Usa il device di default da train.py
-                    "pruning_ratios": cfg.pruning_ratios,
-                }
                 if optimizer_name.lower() == "prunadag":
-                    kwargs["prunadag_variant"] = prunadag_variant
+                    for top_k_ratio in top_k_ratios_to_run:
+                        current_exp += 1
+                        print(
+                            f"\n[{current_exp}/{total_experiments}] {optimizer_name} + {model_name} + {dataset_name} "
+                            f"(top_k_ratio={top_k_ratio})"
+                        )
+                        print("-" * 80)
 
-                metrics = train_full_experiment(**kwargs)
+                        metrics = train_full_experiment(
+                            model=deepcopy(base_model),
+                            train_loader=train_loader,
+                            test_loader=test_loader,
+                            optimizer_type=optimizer_name,
+                            dataset_name=dataset_name,
+                            model_name=model_name,
+                            seed=cfg.seed,
+                            num_epochs=cfg.num_epochs,
+                            device=None,  # Usa il device di default da train.py
+                            pruning_ratios=cfg.pruning_ratios,
+                            top_k_ratio=top_k_ratio,
+                            prunadag_variant=prunadag_variant,
+                        )
 
-                results.append(metrics)
+                        results.append(metrics)
 
-                # Salva immediatamente il risultato in JSON
-                variant_suffix = f"_{prunadag_variant}" if optimizer_name.lower() == "prunadag" else ""
-                result_filename = (
-                    f"{optimizer_name.lower()}_{model_name.lower()}_{dataset_name.lower()}.json"
-                )
-                result_path = cfg.results_dir / result_filename
-                metrics.save_json(result_path)
-                print(f"Risultato salvato: {result_path}")
+                        top_k_suffix = f"topk_{int(round(top_k_ratio * 100))}"
+                        result_filename = (
+                            f"{optimizer_name.lower()}_{model_name.lower()}_{dataset_name.lower()}_{top_k_suffix}.json"
+                        )
+                        result_path = cfg.results_dir / result_filename
+                        metrics.save_json(result_path)
+                        print(f"Risultato salvato: {result_path}")
+                else:
+                    current_exp += 1
+                    print(f"\n[{current_exp}/{total_experiments}] {optimizer_name} + {model_name} + {dataset_name}")
+                    print("-" * 80)
+
+                    metrics = train_full_experiment(
+                        model=deepcopy(base_model),
+                        train_loader=train_loader,
+                        test_loader=test_loader,
+                        optimizer_type=optimizer_name,
+                        dataset_name=dataset_name,
+                        model_name=model_name,
+                        seed=cfg.seed,
+                        num_epochs=cfg.num_epochs,
+                        device=None,  # Usa il device di default da train.py
+                        pruning_ratios=cfg.pruning_ratios,
+                        top_k_ratio=default_top_k_ratio,
+                    )
+
+                    results.append(metrics)
+
+                    result_filename = f"{optimizer_name.lower()}_{model_name.lower()}_{dataset_name.lower()}.json"
+                    result_path = cfg.results_dir / result_filename
+                    metrics.save_json(result_path)
+                    print(f"Risultato salvato: {result_path}")
 
     print("\n" + "=" * 80)
     print(f"ESPERIMENTI COMPLETATI: {len(results)}/{total_experiments}")
@@ -192,6 +228,7 @@ def main():
     print(f"  Epoche: {cfg.num_epochs}")
     print(f"  Data dir: {cfg.data_dir}")
     print(f"  Results dir: {cfg.results_dir}")
+    print(f"  Top-k ratios: {cfg.top_k_ratios}")
     print(f"  Pruning ratios: {cfg.pruning_ratios}")
     print(f"  PrunAdag variant: {prunadag_variant}")
     print(f"  Seed: {prunadag_seed}")

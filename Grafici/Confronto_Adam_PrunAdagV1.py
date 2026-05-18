@@ -6,7 +6,7 @@ import pandas as pd
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "results" / "experiments.csv"
+CSV_PATH = BASE_DIR / "results" / "Confronto_Adam_PrunAdagV1.csv"
 OUTPUT_DIR = BASE_DIR / "Grafici" / "Confronto_Adam_PrunAdagV1"
 
 TRAIN_LOSS_COLUMNS = [f"train_loss_ep{epoch}" for epoch in range(1, 11)]
@@ -71,6 +71,9 @@ def save_figure(fig: plt.Figure, filename: str) -> None:
 	fig.tight_layout()
 	# Force PDF output regardless of requested filename extension
 	out_path = OUTPUT_DIR / Path(filename).with_suffix('.pdf').name
+	# slightly reduce width to avoid wasted horizontal space in reports
+	w, h = fig.get_size_inches()
+	fig.set_size_inches(w * 0.75, h)
 	fig.savefig(out_path, dpi=200, bbox_inches="tight")
 	plt.close(fig)
 

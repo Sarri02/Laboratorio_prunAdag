@@ -11,7 +11,7 @@ def _fmt_num(x: Any) -> str:
         return ""
 
 
-def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experiments.csv") -> None:
+def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/Esperimenti.csv") -> None:
     csv_path = Path(csv_path)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -28,6 +28,7 @@ def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experimen
         "seed",
         "num_parameters",
         "num_epochs",
+        "top_k_ratio",
     ]
 
     epoch_loss_cols = [f"train_loss_ep{e+1}" for e in range(num_epochs)]
@@ -66,6 +67,7 @@ def save_experiment_csv(metrics: Dict, csv_path: Path | str = "results/experimen
     row["seed"] = str(metrics.get("seed", ""))
     row["num_parameters"] = str(metrics.get("num_parameters", ""))
     row["num_epochs"] = str(num_epochs)
+    row["top_k_ratio"] = str(metrics.get("top_k_ratio", ""))
 
     for i in range(num_epochs):
         loss_col = f"train_loss_ep{i+1}"

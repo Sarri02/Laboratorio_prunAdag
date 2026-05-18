@@ -64,6 +64,9 @@ def save_figure(fig: plt.Figure, filename: str) -> None:
 	fig.tight_layout()
 	# Force PDF output regardless of requested filename extension
 	out_path = OUTPUT_DIR / Path(filename).with_suffix('.pdf').name
+	# slightly reduce width to avoid wasted horizontal space in reports
+	w, h = fig.get_size_inches()
+	fig.set_size_inches(w * 0.75, h)
 	fig.savefig(out_path, dpi=200, bbox_inches="tight")
 	plt.close(fig)
 

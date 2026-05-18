@@ -144,6 +144,8 @@ class ExperimentMetrics:
     optimizer_name: str  # "Adam" o "PrunAdag"
     dataset_name: str  # "MNIST" o "FashionMNIST"
     model_name: str  # "MLP" o "CNN"
+    seed: int  # Seed usato per l'esperimento
+    top_k_ratio: float  # top-k ratio usato da PrunAdag
     train_loss: List[float]  # Una per epoca
     train_accuracy: List[float]  # Una per epoca
     test_loss: float  # Finale
@@ -182,9 +184,11 @@ def train_full_experiment(
     optimizer_type: str,
     dataset_name: str,
     model_name: str,
+    seed: int,
     num_epochs: int,
     device: torch.device | None = None,
     pruning_ratios: List[float] = None,
+    top_k_ratio: float = 0.1,
     prunadag_variant: str = "v1",
 ) -> ExperimentMetrics:
 
@@ -204,7 +208,7 @@ def train_full_experiment(
     if optimizer_type.lower() == "adam":
         optimizer = Adam(model.parameters(), lr=1e-3)
     elif optimizer_type.lower() == "prunadag":
-        optimizer = PrunAdag(model.parameters(), lr=1e-2, top_k_ratio=0.1, variant=prunadag_variant)
+        optimizer = PrunAdag(model.parameters(), lr=1e-2, top_k_ratio=top_k_ratio, variant=prunadag_variant)
     else:
         raise ValueError(f"Optimizer non supportato: {optimizer_type}")
 
@@ -266,6 +270,8 @@ def train_full_experiment(
         optimizer_name=opt_name,
         dataset_name=dataset_name,
         model_name=model_name,
+        seed=seed,
+        top_k_ratio=top_k_ratio,
         train_loss=train_losses,
         train_accuracy=train_accuracies,
         test_loss=test_loss,
