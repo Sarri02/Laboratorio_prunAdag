@@ -8,7 +8,7 @@ March 6, 2026
 
 1
 
-Project Work general rules
+Project Work general rules:
 
 1. Students (both from INM and IAM programs) interested in carrying out the 3CFU project on Optimization can contact (anytime) me to discuss possible assignments. It is not required that the student(s) have already passed the exam of the main Optimization course, however basic knowledge of nonlinear optimization and some in depth study of a subset of the course topics will clearly be necessary for the project work.
 
