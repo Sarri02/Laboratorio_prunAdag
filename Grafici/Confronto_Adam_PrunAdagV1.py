@@ -303,7 +303,7 @@ def main() -> None:
 	plot_bar_metric(
 		data,
 		"test_accuracy",
-		"Accuracy finale sul test",
+		"Final Test Accuracy",
 		"Test accuracy",
 		"03_test_accuracy.png",
 	)
