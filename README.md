@@ -41,9 +41,3 @@ documentazione/    # Articolo e template
 - `main.py`: orchestration degli esperimenti; costruisce combinazioni dataset/modello/ottimizzatore e salva JSON in `results/`.
 - `config.py`: parametri di default (dataset, batch size, epoche, learning rate, top-k ratios, pruning ratios, seeds).
 - `models.py`: definisce `MLP` e `SimpleCNN` usati negli esperimenti.
-
-## Output
-
-- I risultati per esperimento sono salvati in `results/<variant>/seed_<n>/` in formato JSON; gli script per generare grafici si trovano in `grafici/`.
-- Nomi file: `<optimizer>_<model>_<dataset>[_topk_<N>].json`.
-- Per GPU: PyTorch rileva automaticamente `cuda` se disponibile.
