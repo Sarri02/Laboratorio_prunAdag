@@ -48,6 +48,7 @@ def load_data() -> pd.DataFrame:
 		"optimizer_name",
 		"top_k_ratio",
 		"test_accuracy",
+			"execution_time",
 		"test_acc_after_pruning_50%",
 		"test_acc_after_pruning_30%",
 		"test_acc_after_pruning_20%",
@@ -75,6 +76,76 @@ def add_labels(data: pd.DataFrame) -> pd.DataFrame:
 	labeled["experiment"] = labeled["dataset_name"] + " | " + labeled["model_name"]
 	labeled["top_k_ratio"] = pd.to_numeric(labeled["top_k_ratio"], errors="coerce")
 	return labeled
+
+
+def plot_execution_time_difference(data: pd.DataFrame) -> None:
+	# show average execution time for TopK settings compared with Adam
+	fig, axes = plt.subplots(1, len(EXPERIMENT_ORDER), figsize=(7 * len(EXPERIMENT_ORDER), 5), sharey=True)
+	axes = np.atleast_1d(axes)
+
+	prun_mask = data["optimizer_name"].astype(str).str.contains("prunadag", case=False, na=False)
+	global_ratios = sorted(data.loc[prun_mask, "top_k_ratio"].dropna().unique())
+	preferred = [0.1, 0.2, 0.5]
+	ratios = [ratio for ratio in preferred if ratio in global_ratios]
+	if not ratios:
+		ratios = list(global_ratios)
+
+	positions = np.arange(len(ratios))
+	bar_width = 0.6
+	all_times = []
+
+	for ax, experiment in zip(axes, EXPERIMENT_ORDER):
+		subset = data[data["experiment"] == experiment]
+		if subset.empty:
+			ax.set_axis_off()
+			continue
+
+		adam_rows = subset[subset["optimizer_name"].astype(str).str.contains("adam", case=False, na=False)]
+		adam_times = pd.to_numeric(adam_rows["execution_time"], errors="coerce").dropna()
+		if adam_times.empty:
+			ax.set_axis_off()
+			continue
+
+		adam_mean = float(adam_times.mean())
+		all_times.append(adam_mean)
+		times = []
+		labels = []
+		colors = []
+		for ratio in ratios:
+			topk_rows = subset[
+				subset["optimizer_name"].astype(str).str.contains("prunadag", case=False, na=False)
+				& (subset["top_k_ratio"] == ratio)
+			]
+			topk_times = pd.to_numeric(topk_rows["execution_time"], errors="coerce").dropna()
+			if topk_times.empty:
+				time_value = np.nan
+			else:
+				time_value = float(topk_times.mean())
+			if not np.isnan(time_value):
+				all_times.append(time_value)
+			times.append(time_value)
+			labels.append(f"TopK {ratio}")
+			colors.append(TOPK_COLOR_MAP.get(float(ratio), "#888888"))
+
+		bars = ax.bar(positions, times, width=bar_width, color=colors, edgecolor="black")
+		ax.axhline(adam_mean, color="#9467BD", linewidth=1.5, alpha=0.75, linestyle="--")
+		bar_labels = [f"{time_value:.2f}" if not np.isnan(time_value) else "" for time_value in times]
+		ax.bar_label(bars, labels=bar_labels, label_type="center", color="black", fontsize=9)
+		ax.set_xticks(positions)
+		ax.set_xticklabels(labels)
+		ax.set_title(experiment)
+		ax.set_xlabel("TopK ratio")
+		ax.grid(axis="y", alpha=0.25)
+
+	if all_times:
+		limit = max(all_times) * 1.15
+		for ax in axes:
+			if ax.get_visible():
+				ax.set_ylim(0, limit)
+
+	axes[0].set_ylabel("Execution time (s)")
+	fig.suptitle("Execution time by TopK ratio compared with Adam", fontsize=14)
+	save_figure(fig, "04_execution_time_difference.pdf")
 
 
 def save_figure(fig: plt.Figure, filename: str) -> None:
@@ -270,6 +341,7 @@ def main() -> None:
 	data = add_labels(load_data())
 	plot_baseline_vs_topk(data)
 	plot_pruning_drop(data)
+	plot_execution_time_difference(data)
 	plot_training_comparison(data)
 	print(f"Saved plots to {OUTPUT_DIR}")
 
